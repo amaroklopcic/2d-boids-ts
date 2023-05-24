@@ -67,6 +67,8 @@ export class CanvasEngine {
     for (let i = 0; i < this.stopHooks.length; i++) {
       this.stopHooks[i]();
     }
+    console.debug("flushing hooks...");
+    this.flushHooks();
     console.debug("engine stopped");
   };
 
@@ -81,6 +83,7 @@ export class CanvasEngine {
       if (this.stateDesired === "RUNNING") {
         this.state = "RUNNING";
         console.debug("frame update");
+        this.clearCanvas();
         for (let i = 0; i < this.updateHooks.length; i++) {
           this.updateHooks[i]();
         }
@@ -93,21 +96,31 @@ export class CanvasEngine {
 
     this.state = "STOPPED";
     console.debug(`stopped event loop (${totalFrames} total frames)`);
-  }
+  };
+
+  clearCanvas() {
+    this.ctx.clearRect(0, 0, this.width, this.height);
+  };
+
+  flushHooks() {
+    this.startHooks = [];
+    this.stopHooks = [];
+    this.updateHooks = [];
+  };
 
   /** adds a hook to be run when `start()` is called and *before* the event loop is running */
   addStartHook(hook: () => void) {
     console.debug("adding start hook...");
     this.startHooks.push(hook);
-  }
+  };
 
   /** adds a hook to be run after `stop()` is called and the *after* event loop is halted */
   addStopHook(hook: () => void) {
     this.stopHooks.push(hook);
-  }
+  };
 
   /** adds a hook to be run when `update()` is called */
   addUpdateHook(hook: () => void) {
     this.updateHooks.push(hook);
-  }
+  };
 }
