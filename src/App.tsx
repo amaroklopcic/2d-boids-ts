@@ -1,5 +1,5 @@
 import './App.css';
-import { BoidsCanvas } from './components/BoidsCanvas';
+import { BoidsCanvas } from './components/BoidsCanvas/BoidsCanvas';
 
 function App() {
   return (
