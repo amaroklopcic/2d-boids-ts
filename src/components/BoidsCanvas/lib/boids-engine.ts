@@ -7,7 +7,7 @@ export class Boid {
   vx: number;
   vy: number;
   color: string;
-  readonly shape: number[][] = [[30, 15], [20, 0], [30, -15]];
+  readonly shape: number[][] = [[30, 15], [25, 0], [30, -15]];
 
   constructor(
     ctx: CanvasRenderingContext2D,
