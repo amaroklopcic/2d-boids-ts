@@ -25,8 +25,6 @@ function BoidsCanvas(props: IBoidsCanvasProps) {
     const ctx = canvas.getContext("2d");
     if (ctx == null) return;
 
-    ctx.clearRect(0, 0, canvasWidth, canvasHeight);
-
     const engine = new BoidsEngine(
       ctx,
       canvasWidth,
