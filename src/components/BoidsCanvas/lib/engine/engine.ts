@@ -39,8 +39,8 @@ export class CanvasEngine {
 
     this.stateDesired = "RUNNING";
 
-    console.debug("running start hooks...");
-    for (let i = 0; i < this.stopHooks.length; i++) {
+    console.debug(`running ${this.startHooks.length} start hooks...`);
+    for (let i = 0; i < this.startHooks.length; i++) {
       this.startHooks[i]();
     }
 
@@ -63,7 +63,7 @@ export class CanvasEngine {
       await this.sleep(1);
     }
 
-    console.debug("event loop stopped! running stop hooks...");
+    console.debug(`event loop stopped! running ${this.stopHooks.length} stop hooks...`);
     for (let i = 0; i < this.stopHooks.length; i++) {
       this.stopHooks[i]();
     }
