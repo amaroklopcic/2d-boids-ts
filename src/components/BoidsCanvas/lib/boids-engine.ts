@@ -38,7 +38,10 @@ export class Boid {
     this.ctx.fill();
   };
 
-  applyForce (fx: number, fy: number) {};
+  applyForce(fx: number, fy: number) {
+    this.vx += fx;
+    this.vy += fy;
+  };
 }
 
 export class BoidsEngine {
@@ -75,11 +78,18 @@ export class BoidsEngine {
   /** instantiates a new boid object */
   createBoid(x: number, y: number) {
     console.debug("creating boid...");    
-    const boid = new Boid(this.ctx, x, y, 0, 0);
+    const boid = new Boid(this.ctx, x, y, 0, 0, "#0077B6");
     this.boids.push(boid);
     return boid;
   };
 
   /** instantiates and creates x number of boids and places them randomly */
-  createRandomBoids() {};
+  createRandomBoids() {
+    // nice blue color palette:
+    // https://coolors.co/palette/03045e-023e8a-0077b6-0096c7-00b4d8-48cae4-90e0ef-ade8f4-caf0f8
+    for(let i = 1; i < 20; i++) {
+      const boid = this.createBoid(i * 30, i * 30);
+      boid.applyForce(30, 30);
+    }
+  };
 }
