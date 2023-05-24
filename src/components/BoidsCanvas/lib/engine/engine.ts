@@ -35,6 +35,11 @@ export class CanvasEngine {
 
   /** starts the event loop and sets engine state to "RUNNING" */
   async start() {
+    if (this.state === "RUNNING") {
+      console.debug("already running, aborting");
+      return;
+    }
+
     console.debug("starting engine...");
 
     this.stateDesired = "RUNNING";
@@ -51,6 +56,11 @@ export class CanvasEngine {
 
   /** stops the event loop and sets engine state to "STOPPED" */
   async stop() {
+    if (this.state === "STOPPED") {
+      console.debug("already stopped, aborting");
+      return;
+    }
+
     console.debug("stopping engine...");
     this.stateDesired = "STOPPED";
 
@@ -86,6 +96,10 @@ export class CanvasEngine {
         this.clearCanvas();
         for (let i = 0; i < this.updateHooks.length; i++) {
           this.updateHooks[i]();
+          // NOTE: for some reason, calling resetTransform here doesn't work
+          // as expected, it needs to get called from the boid object to work
+          // correctly
+          // this.ctx.resetTransform();
         }
         await this.sleep(delay);
       } else {
