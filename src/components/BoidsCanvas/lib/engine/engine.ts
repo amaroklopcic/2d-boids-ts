@@ -11,6 +11,8 @@ export class CanvasEngine {
   startHooks: Array<() => void>;
   stopHooks: Array<() => void>;
   updateHooks: Array<() => void>;
+  lastFrameTimestamp: number = 0;
+  deltaTime: number = 0;
 
   constructor(
     ctx: CanvasRenderingContext2D,
@@ -89,23 +91,29 @@ export class CanvasEngine {
     let totalFrames = 0;
 
     for (let i of whileGenerator()) {
+      const deltaTimeStart = performance.now();
       totalFrames = i;
       if (this.stateDesired === "RUNNING") {
         this.state = "RUNNING";
-        console.debug("frame update");
         this.clearCanvas();
+        this.ctx.save();
+        this.draw();
         for (let i = 0; i < this.updateHooks.length; i++) {
           this.updateHooks[i]();
           // NOTE: for some reason, calling resetTransform here doesn't work
           // as expected, it needs to get called from the boid object to work
           // correctly
           // this.ctx.resetTransform();
+          this.ctx.restore();
         }
         await this.sleep(delay);
       } else {
         console.debug("stopping event loop...");
         break;
       }
+      const deltaTimeEnd = performance.now();
+      this.deltaTime = deltaTimeEnd - deltaTimeStart;
+      this.lastFrameTimestamp = deltaTimeStart;
     }
 
     this.state = "STOPPED";
@@ -115,6 +123,13 @@ export class CanvasEngine {
   clearCanvas() {
     this.ctx.clearRect(0, 0, this.width, this.height);
   };
+
+  draw() {
+    if (this.fpsDisplay) {
+      this.ctx.font = "20px serif";
+      this.ctx.fillText(`${1000 / this.deltaTime}`, 10, 20);
+    }
+  }
 
   flushHooks() {
     this.startHooks = [];
