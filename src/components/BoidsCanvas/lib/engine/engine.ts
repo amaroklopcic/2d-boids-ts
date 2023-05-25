@@ -11,7 +11,9 @@ export class CanvasEngine {
   startHooks: Array<() => void>;
   stopHooks: Array<() => void>;
   updateHooks: Array<() => void>;
-  lastFrameTimestamp: number = 0;
+  /** holds a collection of deltaTimes for getting a more readable fps counter */
+  deltaTimeBuffer: number[] = [];
+  /** milliseconds elapsed since last frame */
   deltaTime: number = 0;
 
   constructor(
@@ -109,9 +111,13 @@ export class CanvasEngine {
         console.debug("stopping event loop...");
         break;
       }
+
       const deltaTimeEnd = performance.now();
       this.deltaTime = deltaTimeEnd - deltaTimeStart;
-      this.lastFrameTimestamp = deltaTimeStart;
+      this.deltaTimeBuffer.push(this.deltaTime);
+      if (this.deltaTimeBuffer.length > 10) {
+        this.deltaTimeBuffer.shift();
+      }
     }
 
     this.state = "STOPPED";
@@ -124,7 +130,13 @@ export class CanvasEngine {
 
   drawFps() {
     if (this.fpsDisplay) {
-      const fps = Math.round(1000 / this.deltaTime);
+      let deltaTimeTotal = 0;
+      for (const deltaTime of this.deltaTimeBuffer) {
+        deltaTimeTotal += deltaTime;
+      }
+      const deltaTimeAvg = deltaTimeTotal / this.deltaTimeBuffer.length;
+
+      const fps = Math.round(1000 / deltaTimeAvg);
       this.ctx.font = "18px serif";
       this.ctx.fillStyle = "red";
       this.ctx.fillText(`FPS: ${fps}`, 10, 20);
