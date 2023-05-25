@@ -145,6 +145,14 @@ export class Boid {
     });
   };
 
+  getDirectionVector(rotationOffset: number = 0) {
+    const rotRad = this.deg2Rad(this.rotation + rotationOffset);
+    return [
+      -Math.cos(rotRad),
+      -Math.sin(rotRad)
+    ];
+  };
+
   getHitbox() {
     // because the x, y coords are at the point of the boid,
     // we need to offset the bounding box start/end pos by
@@ -157,18 +165,15 @@ export class Boid {
 
   /** updates direction calculations & redraws to screen */
   update() {
-    const rotRad = this.deg2Rad(this.rotation);
-    const direction = [
-      -Math.cos(rotRad),
-      -Math.sin(rotRad)
-    ];
+    const direction = this.getDirectionVector();
 
     this.x += direction[0] * this.velocity;
     this.y += direction[1] * this.velocity;
 
     // TODO: implement seperation, alignment, & cohesion
     this.updateFishTailEffect();
-    this.updateSeperation();
+    this.updateSeparation();
+    this.updateCanvasBoundsAvoidance();
 
     this.draw();
     this.ctx.resetTransform();
@@ -207,18 +212,17 @@ export class Boid {
     return Math.min(Math.max(n, min), max);
   };
 
-  /** drives boids away from each other */
-  updateSeperation() {
+  /** steer to avoid crowding local flockmates */
+  updateSeparation() {
+    // TODO: additional checks are needed here to check for when the boid is
+    // RIGHT next to a flockmate; currently they avoid each other but sometimes
+    // end up inside each other resulting in the below not working fully
     const checkAngles = [-90, -60, -30, 0, 30, 60, 90];
     const traceDistance = 150;
     const maxRotationSpeed = 1;
 
     for (const angle of checkAngles) {
-      const rotRad = this.deg2Rad(this.rotation + angle);
-      const direction = [
-        -Math.cos(rotRad),
-        -Math.sin(rotRad)
-      ];
+      const direction = this.getDirectionVector(angle);
       
       const traceResult = this.fireTrace(direction, traceDistance);
       if (traceResult) {
@@ -232,9 +236,42 @@ export class Boid {
     }
   };
 
-  /** drives boids in alignment with each other */
+  /** steer towards the average heading of local flockmates */
   updateAlignment() {};
 
-  /** drives boids away from the walls??? */
+  /** steer to move towards the average position (center of mass) of local flockmates */
   updateCohesion() {};
+
+  /** gets the distance between two vectors */
+  vectorDistance(v0: number[], v1: number[]) {
+    return Math.sqrt((v0[0] - v1[0]) ** 2 + (v0[1] - v1[1]) ** 2);
+  };
+
+  /** steer to avoid going outside the canvas */
+  updateCanvasBoundsAvoidance() {
+    const checkAngles = [-90, -60, -30, 0, 30, 60, 90];
+    const traceDistance = 150;
+    const maxRotationSpeed = 3;
+
+    for (const angle of checkAngles) {
+      const direction = this.getDirectionVector(angle);
+
+      const predictedX = this.clamp(
+        this.x + (direction[0] * traceDistance),
+        0,
+        this.engine.width
+      );
+      const predictedY = this.clamp(
+        this.y + (direction[1] * traceDistance),
+        0,
+        this.engine.height
+      );
+
+      const distance = this.vectorDistance([this.x, this.y], [predictedX, predictedY]);
+      const rotationDir = this.clamp(-angle + 0.01, -1, 1);
+      const rotationStrenth = (1 - (1 / (traceDistance / Math.max(distance, 1))));
+
+      this.rotation += maxRotationSpeed * rotationDir * rotationStrenth;
+    }
+  };
 };
