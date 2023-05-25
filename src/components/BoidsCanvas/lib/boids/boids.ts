@@ -12,7 +12,7 @@ export class Boid {
   velocity: number = 0;
   fishTailLerpValue = 0;
   fishTailLerpTarget = 1;
-  debug: boolean = true;
+  debug: boolean = false;
   readonly shape: number[][] = [[30, 10], [25, 0], [30, -10]];
   readonly boundingBoxDims: number[] = [30, 30];
 
@@ -173,6 +173,7 @@ export class Boid {
     // TODO: implement seperation, alignment, & cohesion
     this.updateFishTailEffect();
     this.updateSeparation();
+    this.updateAlignment();
     this.updateCanvasBoundsAvoidance();
 
     this.draw();
@@ -236,8 +237,45 @@ export class Boid {
     }
   };
 
+  signAngle(angle: number) {
+    return this.signedMod((angle + 180), 360) - 180;
+  };
+
+  signedMod(a: number, n: number) {
+    return a - Math.floor(a / n) * n;
+  };
+
   /** steer towards the average heading of local flockmates */
-  updateAlignment() {};
+  updateAlignment() {
+    const alignmentRange = 300;
+    const maxRotationSpeed = 3;
+
+    const boidsInRange = this.engine.boids.filter(
+      (boid) => (
+        boid !== this &&
+        this.vectorDistance([this.x, this.y], [boid.x, boid.y]) < alignmentRange
+      )
+    );
+
+    if (boidsInRange.length < 1) {
+      return;
+    }
+
+    const boidRots = boidsInRange.map((boid) => boid.rotation);
+
+    let totalRot = 0;
+    for (let i = 0; i < boidRots.length; i++) {
+      totalRot += boidRots[i];
+    }
+
+    const averageRot = totalRot / boidsInRange.length;
+    const rotationDiff = this.signAngle(averageRot - this.rotation);
+
+    const rotationStrenth = (1 - (1 / rotationDiff));
+
+    // this.rotation = this.signAngle(this.rotation);
+    this.rotation += maxRotationSpeed * rotationStrenth;
+  };
 
   /** steer to move towards the average position (center of mass) of local flockmates */
   updateCohesion() {};
@@ -250,8 +288,8 @@ export class Boid {
   /** steer to avoid going outside the canvas */
   updateCanvasBoundsAvoidance() {
     const checkAngles = [-90, -60, -30, 0, 30, 60, 90];
-    const traceDistance = 150;
-    const maxRotationSpeed = 3;
+    const traceDistance = 300;
+    const maxRotationSpeed = 5;
 
     for (const angle of checkAngles) {
       const direction = this.getDirectionVector(angle);
