@@ -13,7 +13,7 @@ export class Boid {
   fishTailLerpValue = 0;
   fishTailLerpTarget = 1;
   debug: boolean = true;
-  readonly shape: number[][] = [[30, 15], [25, 0], [30, -15]];
+  readonly shape: number[][] = [[30, 10], [25, 0], [30, -10]];
   readonly boundingBoxDims: number[] = [30, 30];
 
   constructor(
