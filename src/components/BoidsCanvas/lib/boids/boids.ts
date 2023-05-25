@@ -12,6 +12,7 @@ export class Boid {
   velocity: number = 0;
   fishTailLerpValue = 0;
   fishTailLerpTarget = 1;
+  debug: boolean = true;
   readonly shape: number[][] = [[30, 15], [25, 0], [30, -15]];
   readonly boundingBoxDims: number[] = [30, 30];
 
@@ -57,24 +58,18 @@ export class Boid {
     this.ctx.fill();
 
     // draw bounding box debug line
-    this.ctx.strokeStyle = "red";
-    this.ctx.lineWidth = 1;
-    this.ctx.beginPath();
-    // draw rect
-    this.ctx.moveTo(this.x, this.y);
-    this.ctx.strokeRect(this.x, this.y - 15, 30, 30);
-    // diagonal line
-    this.ctx.moveTo(this.x, this.y - 15);
-    this.ctx.lineTo(this.x + 30, this.y + 15);
-    this.ctx.stroke();
-
-    // draw boid forward vector debug line
-    // this.ctx.strokeStyle = "#48CAE4";
-    // this.ctx.lineWidth = 1;
-    // this.ctx.beginPath();
-    // this.ctx.moveTo(this.x, this.y);
-    // this.ctx.lineTo(this.x - 50, this.y);
-    // this.ctx.stroke();
+    if (this.debug) {
+      this.ctx.strokeStyle = "red";
+      this.ctx.lineWidth = 1;
+      this.ctx.beginPath();
+      // draw rect
+      this.ctx.moveTo(this.x, this.y);
+      this.ctx.strokeRect(this.x, this.y - 15, 30, 30);
+      // diagonal line
+      this.ctx.moveTo(this.x, this.y - 15);
+      this.ctx.lineTo(this.x + 30, this.y + 15);
+      this.ctx.stroke();
+    }
   };
 
   applyForce(fx: number, fy: number) {
@@ -107,26 +102,15 @@ export class Boid {
       };
       return null;
     };
-
-    // draw trace
-    // this.ctx.strokeStyle = "green";
-    // this.ctx.lineWidth = 1;
-    // this.ctx.beginPath();
-    // this.ctx.moveTo(this.x, this.y);
-    // this.ctx.lineTo(
-    //   this.x + (directionVector[0] * distance),
-    //   this.y + (directionVector[1] * distance)
-    // );
-    // this.ctx.stroke();
  
-    // from this.x, this.y go towards direction vector
     for (let i = 1; i < distance; i++) {
       const dirVecMag = [
         this.x + (i * directionVector[0]),
         this.y + (i * directionVector[1])
       ];
-      // console.log(dirVecMag);
-      if (i + 1 === distance) {
+
+      // draw traces if in debug mode (but only on the last iteration)
+      if (this.debug && i + 1 === distance) {
         this.ctx.beginPath();
           this.ctx.fillStyle = "green";
           this.ctx.lineWidth = 1;
@@ -141,6 +125,7 @@ export class Boid {
         this.ctx.lineTo(dirVecMag[0], dirVecMag[1]);
         this.ctx.stroke();
       }
+
       const result = isVectorInsideBoid(dirVecMag);
       if (result) {
         return result;
