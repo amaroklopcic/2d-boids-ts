@@ -86,7 +86,6 @@ export class CanvasEngine {
 
   /** gets called every frame (limited by `fpsLimit`) */
   async update() {
-    // get ms delay for fps
     const delay = 1000 / this.fpsLimit;
     let totalFrames = 0;
 
@@ -97,16 +96,15 @@ export class CanvasEngine {
         this.state = "RUNNING";
         this.clearCanvas();
         this.ctx.save();
-        this.draw();
+        this.drawFps();
         for (let i = 0; i < this.updateHooks.length; i++) {
           this.updateHooks[i]();
-          // NOTE: for some reason, calling resetTransform here doesn't work
-          // as expected, it needs to get called from the boid object to work
-          // correctly
-          // this.ctx.resetTransform();
           this.ctx.restore();
         }
-        await this.sleep(delay);
+        // adjust time to sleep before next frame with delta time to
+        // account for time it took for calculations, drawing, etc.
+        // in between frames
+        await this.sleep(delay - (this.deltaTime - delay));
       } else {
         console.debug("stopping event loop...");
         break;
@@ -124,10 +122,12 @@ export class CanvasEngine {
     this.ctx.clearRect(0, 0, this.width, this.height);
   };
 
-  draw() {
+  drawFps() {
     if (this.fpsDisplay) {
-      this.ctx.font = "20px serif";
-      this.ctx.fillText(`${1000 / this.deltaTime}`, 10, 20);
+      const fps = Math.round(1000 / this.deltaTime);
+      this.ctx.font = "18px serif";
+      this.ctx.fillStyle = "red";
+      this.ctx.fillText(`FPS: ${fps}`, 10, 20);
     }
   }
 
