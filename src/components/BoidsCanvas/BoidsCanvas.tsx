@@ -6,8 +6,6 @@ interface IBoidsCanvasProps {
   height?: number;
   fpsLimit?: number;
   fpsDisplay?: boolean;
-  start?: () => void;
-  stop?: () => void;
 }
 
 function BoidsCanvas(props: IBoidsCanvasProps) {
@@ -46,10 +44,10 @@ function BoidsCanvas(props: IBoidsCanvasProps) {
 
   return (
     <div>
-      <span>
+      <div style={{ display: "flex", justifyContent: "center" }}>
         <button onClick={startEngine}>Start</button>
         <button onClick={stopEngine}>Stop</button>
-      </span>
+      </div>
       <canvas
         id="boids-canvas"
         ref={canvasRef}
