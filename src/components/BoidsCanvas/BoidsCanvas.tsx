@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { BoidsEngine } from "./lib/boids-engine";
+import { BoidsEngine } from "./lib/boids/boids-engine";
 
 interface IBoidsCanvasProps {
   width?: number;
