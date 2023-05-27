@@ -1,4 +1,4 @@
-import { sleep, whileGenerator } from "./misc";
+import { sleep, whileGenerator } from './misc';
 
 export class CanvasEngine {
   ctx: CanvasRenderingContext2D;
@@ -6,30 +6,30 @@ export class CanvasEngine {
   height: number;
   fpsLimit: number;
   fpsDisplay: boolean;
-  state: "RUNNING" | "STOPPED";
-  stateDesired: "RUNNING" | "STOPPED";
+  state: 'RUNNING' | 'STOPPED';
+  stateDesired: 'RUNNING' | 'STOPPED';
   startHooks: Array<() => void>;
   stopHooks: Array<() => void>;
   updateHooks: Array<() => void>;
   /** holds a collection of deltaTimes for getting a more readable fps counter */
   deltaTimeBuffer: number[] = [];
   /** milliseconds elapsed since last frame */
-  deltaTime: number = 0;
+  deltaTime = 0;
 
   constructor(
     ctx: CanvasRenderingContext2D,
     width: number,
     height: number,
-    fpsLimit: number = 60,
-    fpsDisplay: boolean = false,
+    fpsLimit = 60,
+    fpsDisplay = false,
   ) {
     this.ctx = ctx;
     this.width = width;
     this.height = height;
     this.fpsLimit = fpsLimit;
     this.fpsDisplay = fpsDisplay;
-    this.state = "STOPPED";
-    this.stateDesired = "STOPPED";
+    this.state = 'STOPPED';
+    this.stateDesired = 'STOPPED';
     this.startHooks = [];
     this.stopHooks = [];
     this.updateHooks = [];
@@ -39,14 +39,14 @@ export class CanvasEngine {
 
   /** starts the event loop and sets engine state to "RUNNING" */
   async start() {
-    if (this.state === "RUNNING") {
-      console.debug("already running, aborting");
+    if (this.state === 'RUNNING') {
+      console.debug('already running, aborting');
       return;
     }
 
-    console.debug("starting engine...");
+    console.debug('starting engine...');
 
-    this.stateDesired = "RUNNING";
+    this.stateDesired = 'RUNNING';
 
     console.debug(`running ${this.startHooks.length} start hooks...`);
     for (let i = 0; i < this.startHooks.length; i++) {
@@ -54,23 +54,23 @@ export class CanvasEngine {
     }
 
     // start event loop
-    console.debug("starting event loop...");
+    console.debug('starting event loop...');
     await this.update();
   }
 
   /** stops the event loop and sets engine state to "STOPPED" */
   async stop() {
-    if (this.state === "STOPPED") {
-      console.debug("already stopped, aborting");
+    if (this.state === 'STOPPED') {
+      console.debug('already stopped, aborting');
       return;
     }
 
-    console.debug("stopping engine...");
-    this.stateDesired = "STOPPED";
+    console.debug('stopping engine...');
+    this.stateDesired = 'STOPPED';
 
     // wait for engine state to be "STOPPED" before running stop hooks
-    for (let i of whileGenerator()) {
-      if (this.state !== "RUNNING") {
+    for (const i of whileGenerator()) {
+      if (this.state !== 'RUNNING') {
         break;
       }
       console.debug(`waiting for event loop to stop... (${i}ms elapsed)`);
@@ -81,21 +81,21 @@ export class CanvasEngine {
     for (let i = 0; i < this.stopHooks.length; i++) {
       this.stopHooks[i]();
     }
-    console.debug("flushing hooks...");
+    console.debug('flushing hooks...');
     this.flushHooks();
-    console.debug("engine stopped");
-  };
+    console.debug('engine stopped');
+  }
 
   /** gets called every frame (limited by `fpsLimit`) */
   async update() {
     const delay = 1000 / this.fpsLimit;
     let totalFrames = 0;
 
-    for (let i of whileGenerator()) {
+    for (const i of whileGenerator()) {
       const deltaTimeStart = performance.now();
       totalFrames = i;
-      if (this.stateDesired === "RUNNING") {
-        this.state = "RUNNING";
+      if (this.stateDesired === 'RUNNING') {
+        this.state = 'RUNNING';
         this.clearCanvas();
         this.ctx.save();
         this.drawFps();
@@ -108,7 +108,7 @@ export class CanvasEngine {
         // in between frames
         await this.sleep(delay - (this.deltaTime - delay));
       } else {
-        console.debug("stopping event loop...");
+        console.debug('stopping event loop...');
         break;
       }
 
@@ -120,13 +120,13 @@ export class CanvasEngine {
       }
     }
 
-    this.state = "STOPPED";
+    this.state = 'STOPPED';
     console.debug(`stopped event loop (${totalFrames} total frames)`);
-  };
+  }
 
   clearCanvas() {
     this.ctx.clearRect(0, 0, this.width, this.height);
-  };
+  }
 
   drawFps() {
     if (this.fpsDisplay) {
@@ -137,8 +137,8 @@ export class CanvasEngine {
       const deltaTimeAvg = deltaTimeTotal / this.deltaTimeBuffer.length;
 
       const fps = Math.round(1000 / deltaTimeAvg);
-      this.ctx.font = "18px serif";
-      this.ctx.fillStyle = "red";
+      this.ctx.font = '18px serif';
+      this.ctx.fillStyle = 'red';
       this.ctx.fillText(`FPS: ${fps}`, 10, 20);
     }
   }
@@ -147,21 +147,21 @@ export class CanvasEngine {
     this.startHooks = [];
     this.stopHooks = [];
     this.updateHooks = [];
-  };
+  }
 
   /** adds a hook to be run when `start()` is called and *before* the event loop is running */
   addStartHook(hook: () => void) {
-    console.debug("adding start hook...");
+    console.debug('adding start hook...');
     this.startHooks.push(hook);
-  };
+  }
 
   /** adds a hook to be run after `stop()` is called and the *after* event loop is halted */
   addStopHook(hook: () => void) {
     this.stopHooks.push(hook);
-  };
+  }
 
   /** adds a hook to be run when `update()` is called */
   addUpdateHook(hook: () => void) {
     this.updateHooks.push(hook);
-  };
+  }
 }
