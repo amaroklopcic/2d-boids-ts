@@ -61,9 +61,6 @@ export class Vector2D {
     const mag = this.magnitude();
     return mag > 0.99 && mag < 1.01;
   }
-
-  /** Linearly interpolates between vectors `a` and `b` by `t`. */
-  lerp(a: Vector2D, b: Vector2D, t: number) {}
 }
 
 /** Calculates an average vector position from a list of vectors. */
