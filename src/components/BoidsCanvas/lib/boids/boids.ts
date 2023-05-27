@@ -112,8 +112,6 @@ export class Boid {
     ctx.stroke();
   }
 
-  drawDebugFov() {}
-
   drawDebugNearbyVoids() {
     const ctx = this.ctx;
 
