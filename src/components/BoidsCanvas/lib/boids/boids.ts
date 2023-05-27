@@ -225,7 +225,7 @@ export class Boid {
     // TODO: implement seperation, alignment, & cohesion
     this.updateFishTailEffect();
     this.updateSeparation();
-    // this.updateAlignment();
+    this.updateAlignment();
     // this.updateCohesion();
     // this.updateCanvasBoundsAvoidance();
 
@@ -284,28 +284,29 @@ export class Boid {
   updateAlignment() {
     const alignmentRange = 150;
     // degrees per frame (6 degrees * 60 fps = 360 degrees of rotation per s)
-    const maxRotationSpeed = 1;
+    const maxRotationSpeed = 3;
 
-    const boidsInRange = this.getNearbyBoids(alignmentRange);
+    const boidsInRange = this.getNearbyBoids(alignmentRange, 225);
 
     if (boidsInRange.length < 1) {
       return;
     }
 
-    const boidRots = boidsInRange.map((boid) => boid.rotation);
+    const boidRotations = boidsInRange.map((boid) => signAngle(boid.rotation) + 360);
 
-    let totalRot = 0;
-    for (let i = 0; i < boidRots.length; i++) {
-      totalRot += boidRots[i];
+    let rotationSum = 0;
+    for (let i = 0; i < boidRotations.length; i++) {
+      rotationSum += boidRotations[i];
     }
 
-    const averageRot = totalRot / boidsInRange.length;
+    const currentRotation = signAngle(this.rotation);
+    const targetRotation = signAngle(rotationSum) / boidsInRange.length;
+    const angleDiff = signAngle((targetRotation + 360) - (currentRotation + 360));
+    const rotationDir = clamp(angleDiff, -1, 1);
+    const clampedTargetRot = Math.min(maxRotationSpeed, Math.abs(angleDiff));
+    const rotationStrenth = 0.5;
 
-    const rotationDiff = signAngle(averageRot - this.rotation);
-    const rotationDir = clamp(-rotationDiff, -1, 1);
-    const lerpedRotation = Math.min(maxRotationSpeed, Math.abs(rotationDiff));
-
-    this.rotation += rotationDir * lerpedRotation;
+    this.rotation += rotationDir * rotationStrenth * clampedTargetRot;
   };
 
   /** Steer to move towards the average position (center of mass) of local
