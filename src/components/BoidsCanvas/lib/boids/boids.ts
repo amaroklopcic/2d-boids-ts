@@ -10,7 +10,7 @@ export class Boid {
   velocity: number = 5;
   fishTailLerpValue = 0;
   fishTailLerpTarget = 1;
-  debug: boolean = true;
+  debug: boolean = false;
   readonly shape: Vector2D[] = [
     new Vector2D(-30, 10),
     new Vector2D(-25, 0),
@@ -210,7 +210,7 @@ export class Boid {
     this.pos = new Vector2D(x, y);
   };
 
-  /** updates direction calculations & redraws to screen */
+  /** Updates direction calculations & redraws to screen */
   update() {
     const forward = this.getForwardVector();
 
@@ -226,7 +226,7 @@ export class Boid {
     this.updateFishTailEffect();
     this.updateSeparation();
     this.updateAlignment();
-    // this.updateCohesion();
+    this.updateCohesion();
     // this.updateCanvasBoundsAvoidance();
 
     this.draw();
@@ -254,39 +254,39 @@ export class Boid {
     this.rotation += (maxRotation * this.fishTailLerpValue);
   };
 
-  /** steer to avoid crowding local flockmates */
+  /** Steer to avoid crowding local flockmates */
   updateSeparation() {
     const separationRange = 150;
+    const fov = 225;
     const maxRotationSpeed = 5;
 
-    const boidsInRange = this.getNearbyBoids(separationRange);
+    const boidsInRange = this.getNearbyBoids(separationRange, fov);
 
     for (const boid of boidsInRange) {
       const distance = Vector2D.distance(this.pos, boid.pos);
 
-      // get direction angle of other boid
+      // get direction angle of other boid and move rotate away from it
       const targetVec = Vector2D.subtract(boid.pos, this.pos);
       const avoidAngle = rad2Deg(Math.atan2(targetVec.y, targetVec.x));
       const currentRotation = signAngle(this.rotation);
       const angleDiff = signAngle((currentRotation + 360) - (avoidAngle + 360));
-      // push angleDiff away from 0
       const rotationDir = clamp(angleDiff, -1, 1);
       const targetRotation = Math.min(maxRotationSpeed, Math.abs(angleDiff));
-      const rotationStrenth = 1 - (distance / separationRange);
+      const rotationStrength = 1 - (distance / separationRange);
 
-      // console.log(`${this.color} ${angleDiff} ${rotationDir} ${targetRotation}`);
-
-      this.rotation += rotationStrenth * rotationDir * targetRotation;
+      this.rotation += rotationStrength * rotationDir * targetRotation;
     }
   };
 
   /** Steer towards the average heading of local flockmates */
   updateAlignment() {
     const alignmentRange = 150;
+    const fov = 225;
     // degrees per frame (6 degrees * 60 fps = 360 degrees of rotation per s)
     const maxRotationSpeed = 3;
+    const rotationStrength = 0.8;
 
-    const boidsInRange = this.getNearbyBoids(alignmentRange, 225);
+    const boidsInRange = this.getNearbyBoids(alignmentRange, fov);
 
     if (boidsInRange.length < 1) {
       return;
@@ -304,44 +304,37 @@ export class Boid {
     const angleDiff = signAngle((targetRotation + 360) - (currentRotation + 360));
     const rotationDir = clamp(angleDiff, -1, 1);
     const clampedTargetRot = Math.min(maxRotationSpeed, Math.abs(angleDiff));
-    const rotationStrenth = 0.5;
 
-    this.rotation += rotationDir * rotationStrenth * clampedTargetRot;
+    this.rotation += rotationDir * rotationStrength * clampedTargetRot;
   };
 
   /** Steer to move towards the average position (center of mass) of local
    * flockmates.
   */
   updateCohesion() {
-    // TODO: finish implementing
-    const cohesionRange = 1000;
+    const cohesionRange = 150;
+    const fov = 225;
     const maxRotationSpeed = 3;
-    const maxStrength = 0.5;
+    const rotationStrength = 0.8;
 
-    const boidsInRange = this.getNearbyBoids(cohesionRange);
+    const boidsInRange = this.getNearbyBoids(cohesionRange, fov);
 
     if (boidsInRange.length < 1) {
       return;
     }
 
     const boidPositions = boidsInRange.map((boid) => boid.pos);
-    // const averageCenter = getVectorsAverage(boidPositions);
-    const averageCenter = new Vector2D(
-      this.engine.width / 2,
-      this.engine.height / 2
-    );
 
-    const signedAngle = signAngle(this.rotation);
+    const averageCenter = getVectorsAverage(boidPositions);
+
+    const currentRotation = signAngle(this.rotation);
     const targetVec = Vector2D.subtract(averageCenter, this.pos);
-    const angleDiff = rad2Deg(Math.atan2(targetVec.y, targetVec.x));
+    const targetRotation = rad2Deg(Math.atan2(targetVec.y, targetVec.x));
+    const angleDiff = signAngle((targetRotation + 360) - (currentRotation + 360));
+    const rotationDir = clamp(angleDiff, -1, 1);
+    const clampedTargetRot = Math.min(maxRotationSpeed, Math.abs(angleDiff));
 
-    // now apply rotation force
-    const maxRotationStrenth = maxRotationSpeed * maxStrength;
-    // const rotationDir = this.clamp(-angle + 0.01, -1, 1);
-    const rotationStrenth = maxRotationSpeed * (1 - (1 / (signedAngle / -angleDiff)));
-    console.log(rotationStrenth);
-
-    this.rotation = this.rotation / lerp(this.rotation, angleDiff, 0.9);
+    this.rotation += rotationDir * rotationStrength * clampedTargetRot;
   };
 
   /** Steer to avoid going outside the canvas. */
