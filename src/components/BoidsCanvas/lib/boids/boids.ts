@@ -1,194 +1,239 @@
+import { Vector2D, clamp, deg2Rad, getVectorsAverage, lerp, rad2Deg, signAngle } from "../math-helpers";
 import { BoidsEngine } from "./boids-engine";
 
 export class Boid {
   ctx: CanvasRenderingContext2D;
   engine: BoidsEngine;
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
+  pos: Vector2D;
   color: string;
   rotation: number;
-  velocity: number = 0;
+  velocity: number = 5;
   fishTailLerpValue = 0;
   fishTailLerpTarget = 1;
   debug: boolean = false;
-  readonly shape: number[][] = [[30, 10], [25, 0], [30, -10]];
-  readonly boundingBoxDims: number[] = [30, 30];
+  readonly shape: Vector2D[] = [
+    new Vector2D(-30, 10),
+    new Vector2D(-25, 0),
+    new Vector2D(-30, -10)
+  ];
+  readonly boundingBoxStartPos: Vector2D = new Vector2D(-30, -10);
+  readonly boundingBoxEndPos: Vector2D = new Vector2D(30, 20);
 
   constructor(
     engine: BoidsEngine,
     x: number,
     y: number,
-    vx: number = 0,
-    vy: number = 0,
     color: string = "green",
   ) {
     this.engine = engine;
     this.ctx = engine.ctx;
-    this.x = x;
-    this.y = y;
-    this.vx = vx;
-    this.vy = vy;
-    this.velocity = 3;
+    this.pos = new Vector2D(x, y);
     this.rotation = 0;
     this.color = color;
-  }
-
-  deg2Rad(degree: number) {
-    return ((degree * Math.PI) / 180);
   };
 
   draw() {
-    this.ctx.fillStyle = this.color;
-
-    // change context origin to point of boid, then rotate
-    this.ctx.translate(this.x, this.y);
-    this.ctx.rotate(this.deg2Rad(this.rotation));
-    this.ctx.translate(-this.x, -this.y);
-
-    // draw boid
-    this.ctx.beginPath();
-    this.ctx.moveTo(this.x, this.y);
-    for (let i = 0; i < this.shape.length; i++) {
-      const coords = this.shape[i];
-      this.ctx.lineTo(this.x + coords[0], this.y + coords[1]);
-    }
-    this.ctx.closePath();
-    this.ctx.fill();
+    this.drawShape();
 
     // draw bounding box debug line
     if (this.debug) {
-      this.ctx.strokeStyle = "red";
-      this.ctx.lineWidth = 1;
-      this.ctx.beginPath();
-      // draw rect
-      this.ctx.moveTo(this.x, this.y);
-      this.ctx.strokeRect(this.x, this.y - 15, 30, 30);
-      // diagonal line
-      this.ctx.moveTo(this.x, this.y - 15);
-      this.ctx.lineTo(this.x + 30, this.y + 15);
-      this.ctx.stroke();
+      this.drawDebugBoundingBox();
+      this.drawDebugDirectionVector();
+      this.drawDebugNearbyVoids();
     }
   };
 
-  applyForce(fx: number, fy: number) {
-    this.vx += fx;
-    this.vy += fy;
+  drawShape() {
+    const ctx = this.ctx;
+
+    ctx.fillStyle = this.color;
+
+    // change context origin to point of boid, then rotate
+    ctx.translate(this.pos.x, this.pos.y);
+    ctx.rotate(deg2Rad(this.rotation));
+    ctx.translate(-this.pos.x, -this.pos.y);
+
+    // draw boid
+    ctx.beginPath();
+      ctx.moveTo(this.pos.x, this.pos.y);
+      for (let i = 0; i < this.shape.length; i++) {
+        const coords = this.shape[i];
+        this.ctx.lineTo(this.pos.x + coords.x, this.pos.y + coords.y);
+      }
+    ctx.fill();
   };
 
-  /** fires a trace in a given direction, checking if it hits an bounding boxes */
-  fireTrace(directionVector: number[], distance: number) {
-    const isVectorInsideBoid = (vector: number[]) => {
-      for (let i = 0; i < this.engine.boids.length; i++) {
-        const boid = this.engine.boids[i];
+  drawDebugBoundingBox() {
+    const ctx = this.ctx;
 
-        if (boid === this) {
+    const [start, end] = this.getBoundingBox();
+
+    ctx.strokeStyle = "red";
+    ctx.lineWidth = 1;
+
+    ctx.beginPath();
+      // draw rect
+      ctx.moveTo(start.x, start.y);
+      ctx.strokeRect(start.x, start.y, end.x - start.x, end.y - start.y);
+      // diagonal line
+      ctx.moveTo(start.x, start.y);
+      ctx.lineTo(end.x, end.y);
+    ctx.stroke();
+  };
+
+  drawDebugDirectionVector() {
+    const ctx = this.ctx;
+
+    const forward = this.getForwardVector();
+    const magnitude = 50;
+
+    ctx.fillStyle = "green";
+    ctx.strokeStyle = "green";
+    ctx.lineWidth = 1;
+
+    // we want to test `this.getForwardVector()`, so we're resetting the
+    // canvas transforms so we can draw from a canvas perspective instead of a
+    // local boid perspective
+    ctx.resetTransform();
+
+    // draw circle around boid tip
+    ctx.beginPath();
+      ctx.arc(this.pos.x, this.pos.y, 4, 0, Math.PI * 4, true);
+      ctx.fill();
+    ctx.stroke();
+
+    // draw line showing direction vector
+    ctx.beginPath();
+      ctx.moveTo(this.pos.x, this.pos.y);
+      ctx.lineTo(
+        this.pos.x + (forward.x * magnitude),
+        this.pos.y + (forward.y * magnitude)
+      );
+    ctx.stroke();
+  };
+
+  drawDebugFov() {};
+
+  drawDebugNearbyVoids() {
+    const ctx = this.ctx;
+
+    const maxRange = 150;
+    const fov = 225;
+    const boids = this.getNearbyBoids(maxRange, fov);
+
+    ctx.strokeStyle = "red";
+    ctx.lineWidth = 1;
+
+    ctx.resetTransform();
+
+    // TODO: draw transparent arc
+    ctx.globalAlpha = 0.1;
+    ctx.beginPath();
+      ctx.moveTo(this.pos.x, this.pos.y);
+      ctx.arc(
+        this.pos.x,
+        this.pos.y,
+        maxRange,
+        deg2Rad(this.rotation - (fov / 2)), deg2Rad(this.rotation + (fov / 2))
+      );
+    ctx.fill();
+    ctx.globalAlpha = 1;
+
+    for (const boid of boids) {
+      ctx.beginPath();
+        ctx.moveTo(this.pos.x, this.pos.y);
+        ctx.lineTo(boid.pos.x, boid.pos.y);
+      ctx.stroke();
+    }
+  };
+
+  /** Returns a list of 2 vectors, the first being the start position of the
+   * bounding box and the second being the end position.
+   * 
+   * The vectors returned take the current position and `boundingBoxPos`
+   * into account.
+  */
+  getBoundingBox(): Vector2D[] {
+    const [x, y] = [this.pos.x, this.pos.y];
+    const start = this.boundingBoxStartPos;
+    const end = this.boundingBoxEndPos;
+
+    return [
+      new Vector2D(x + start.x, y + start.y),
+      new Vector2D(x + start.x + end.x, y + start.y + end.y),
+    ]
+  };
+
+  /** Returns the boids normalized forward direction vector. */
+  getForwardVector(rotationOffset: number = 0) {
+    const rotRad = deg2Rad(this.rotation + rotationOffset);
+    return new Vector2D(Math.cos(rotRad), Math.sin(rotRad))
+  };
+
+  /** Returns a list of `Boid` objects within the specified `range` and within
+   *  the boids fov, in degrees.
+  */
+  getNearbyBoids(range: number, fov: number = 360) {
+    const boids = this.engine.boids;
+
+    const returnVal = [];
+
+    let length = boids.length;
+    while(length--) {
+      const boid = boids[length];
+      const distance = Vector2D.distance(this.pos, boid.pos);
+      if (boid !== this && distance < range) {
+        if (fov === 360) {
+          returnVal.push(boid);
           continue;
         }
 
-        const hitbox = boid.getHitbox();
-        const vectorMin = hitbox[0];
-        const vectorMax = hitbox[1];
-        if (
-          (vector[0] > vectorMin[0] && vector[1] > vectorMin[1]) &&
-          (vector[0] < vectorMax[0] && vector[1] < vectorMax[1])
-        ) {
-          return {
-            ent: boid,
-            distance: i
-          };
+        const targetVec = Vector2D.subtract(boid.pos, this.pos);
+        const targetAngle = rad2Deg(Math.atan2(targetVec.y, targetVec.x));
+        const fovHalf = fov / 2;
+        const signedAngle = signAngle(this.rotation);
+        const minAngle = ((signedAngle + 360) % 360) - fovHalf;
+        const maxAngle = ((signedAngle + 360) % 360) + fovHalf;
+        const positiveTargetAng = (targetAngle + 360) % 360;
+
+        if (positiveTargetAng <= maxAngle && positiveTargetAng >= minAngle) {
+          returnVal.push(boid);
         }
-      };
-      return null;
-    };
- 
-    for (let i = 1; i < distance; i++) {
-      const dirVecMag = [
-        this.x + (i * directionVector[0]),
-        this.y + (i * directionVector[1])
-      ];
-
-      // draw traces if in debug mode (but only on the last iteration)
-      if (this.debug && i + 1 === distance) {
-        this.ctx.beginPath();
-          this.ctx.fillStyle = "green";
-          this.ctx.lineWidth = 1;
-          this.ctx.arc(this.x, this.y, 5, 0, Math.PI * 4, true);
-          this.ctx.fill();
-        this.ctx.stroke();
-
-        this.ctx.strokeStyle = "green";
-        this.ctx.lineWidth = 1;
-        this.ctx.beginPath();
-        this.ctx.moveTo(this.x, this.y);
-        this.ctx.lineTo(dirVecMag[0], dirVecMag[1]);
-        this.ctx.stroke();
-      }
-
-      const result = isVectorInsideBoid(dirVecMag);
-      if (result) {
-        return result;
       }
     }
 
-    return null;
+    return returnVal;
   };
 
-  /** get a list of all nearby boids positions and bounding boxes */
-  getBoidsBoundingBoxes() {
-    return this.engine.boids.map((boid) => {
-      return {
-        boid: boid,
-        hitbox: boid.getHitbox()
-      };
-    });
+  /** Set boid position. */
+  setPos(x: number, y: number) {
+    this.pos = new Vector2D(x, y);
   };
 
-  getDirectionVector(rotationOffset: number = 0) {
-    const rotRad = this.deg2Rad(this.rotation + rotationOffset);
-    return [
-      -Math.cos(rotRad),
-      -Math.sin(rotRad)
-    ];
-  };
-
-  getHitbox() {
-    // because the x, y coords are at the point of the boid,
-    // we need to offset the bounding box start/end pos by
-    // half the bounding box
-    const bbDims = this.boundingBoxDims;
-    const startPos = [this.x, this.y - (bbDims[0] / 2)];
-    const endPos = [this.x + bbDims[0], this.y + (bbDims[0] / 2)]
-    return [startPos, endPos];
-  };
-
-  /** updates direction calculations & redraws to screen */
+  /** Updates direction calculations & redraws to screen */
   update() {
-    const direction = this.getDirectionVector();
+    const forward = this.getForwardVector();
 
-    this.x += direction[0] * this.velocity;
-    this.y += direction[1] * this.velocity;
+    this.setPos(
+      this.pos.x + (forward.x * this.velocity),
+      this.pos.y + (forward.y * this.velocity)
+    );
+
+    // this.x += direction[0] * this.velocity * (1000 / dt);
+    // this.y += direction[1] * this.velocity * (1000 / dt);
 
     // TODO: implement seperation, alignment, & cohesion
     this.updateFishTailEffect();
     this.updateSeparation();
     this.updateAlignment();
-    this.updateCanvasBoundsAvoidance();
+    this.updateCohesion();
+    // this.updateCanvasBoundsAvoidance();
 
     this.draw();
     this.ctx.resetTransform();
   };
 
-  /** returns an interpolation between two inputs (`v0` and `v1`),
-   * where `v0` is the current value, `v1` is the target, and `t`
-   * is theinterpolation degree
-   */
-  lerp(v0: number, v1: number, t: number) {
-    return ((v0 * t) + (v1 * (1 - t)));
-  };
-
-  /** gives boids a fish tail effect to make them look more alive */
+  /** Gives boids a fish tail effect to make them look more alive. */
   updateFishTailEffect() {
     const maxRotation = 1;
     const lerpDegree = 0.7;
@@ -200,7 +245,7 @@ export class Boid {
       this.fishTailLerpTarget = 1;
     }
 
-    this.fishTailLerpValue = this.lerp(
+    this.fishTailLerpValue = lerp(
       this.fishTailLerpValue,
       this.fishTailLerpTarget,
       lerpDegree
@@ -209,104 +254,112 @@ export class Boid {
     this.rotation += (maxRotation * this.fishTailLerpValue);
   };
 
-  clamp(n: number, min: number, max: number) {
-    return Math.min(Math.max(n, min), max);
-  };
-
-  /** steer to avoid crowding local flockmates */
+  /** Steer to avoid crowding local flockmates */
   updateSeparation() {
-    // TODO: additional checks are needed here to check for when the boid is
-    // RIGHT next to a flockmate; currently they avoid each other but sometimes
-    // end up inside each other resulting in the below not working fully
-    const checkAngles = [-90, -60, -30, 0, 30, 60, 90];
-    const traceDistance = 150;
-    const maxRotationSpeed = 1;
+    const separationRange = 150;
+    const fov = 225;
+    const maxRotationSpeed = 5;
 
-    for (const angle of checkAngles) {
-      const direction = this.getDirectionVector(angle);
-      
-      const traceResult = this.fireTrace(direction, traceDistance);
-      if (traceResult) {
-        // introduce angle bias so we aren't diving by 0
-        this.rotation += this.clamp(
-          maxRotationSpeed * (1 / (-angle + 0.01)) * (traceDistance / (Math.max(traceResult.distance, 1))),
-          -maxRotationSpeed,
-          maxRotationSpeed
-        );
-      }
+    const boidsInRange = this.getNearbyBoids(separationRange, fov);
+
+    for (const boid of boidsInRange) {
+      const distance = Vector2D.distance(this.pos, boid.pos);
+
+      // get direction angle of other boid and move rotate away from it
+      const targetVec = Vector2D.subtract(boid.pos, this.pos);
+      const avoidAngle = rad2Deg(Math.atan2(targetVec.y, targetVec.x));
+      const currentRotation = signAngle(this.rotation);
+      const angleDiff = signAngle((currentRotation + 360) - (avoidAngle + 360));
+      const rotationDir = clamp(angleDiff, -1, 1);
+      const targetRotation = Math.min(maxRotationSpeed, Math.abs(angleDiff));
+      const rotationStrength = 1 - (distance / separationRange);
+
+      this.rotation += rotationStrength * rotationDir * targetRotation;
     }
   };
 
-  signAngle(angle: number) {
-    return this.signedMod((angle + 180), 360) - 180;
-  };
-
-  signedMod(a: number, n: number) {
-    return a - Math.floor(a / n) * n;
-  };
-
-  /** steer towards the average heading of local flockmates */
+  /** Steer towards the average heading of local flockmates */
   updateAlignment() {
-    const alignmentRange = 300;
+    const alignmentRange = 150;
+    const fov = 225;
+    // degrees per frame (6 degrees * 60 fps = 360 degrees of rotation per s)
     const maxRotationSpeed = 3;
+    const rotationStrength = 0.8;
 
-    const boidsInRange = this.engine.boids.filter(
-      (boid) => (
-        boid !== this &&
-        this.vectorDistance([this.x, this.y], [boid.x, boid.y]) < alignmentRange
-      )
-    );
+    const boidsInRange = this.getNearbyBoids(alignmentRange, fov);
 
     if (boidsInRange.length < 1) {
       return;
     }
 
-    const boidRots = boidsInRange.map((boid) => boid.rotation);
+    const boidRotations = boidsInRange.map((boid) => signAngle(boid.rotation) + 360);
 
-    let totalRot = 0;
-    for (let i = 0; i < boidRots.length; i++) {
-      totalRot += boidRots[i];
+    let rotationSum = 0;
+    for (let i = 0; i < boidRotations.length; i++) {
+      rotationSum += boidRotations[i];
     }
 
-    const averageRot = totalRot / boidsInRange.length;
-    const rotationDiff = this.signAngle(averageRot - this.rotation);
+    const currentRotation = signAngle(this.rotation);
+    const targetRotation = signAngle(rotationSum) / boidsInRange.length;
+    const angleDiff = signAngle((targetRotation + 360) - (currentRotation + 360));
+    const rotationDir = clamp(angleDiff, -1, 1);
+    const clampedTargetRot = Math.min(maxRotationSpeed, Math.abs(angleDiff));
 
-    const rotationStrenth = (1 - (1 / rotationDiff));
-
-    // this.rotation = this.signAngle(this.rotation);
-    this.rotation += maxRotationSpeed * rotationStrenth;
+    this.rotation += rotationDir * rotationStrength * clampedTargetRot;
   };
 
-  /** steer to move towards the average position (center of mass) of local flockmates */
-  updateCohesion() {};
+  /** Steer to move towards the average position (center of mass) of local
+   * flockmates.
+  */
+  updateCohesion() {
+    const cohesionRange = 150;
+    const fov = 225;
+    const maxRotationSpeed = 3;
+    const rotationStrength = 0.8;
 
-  /** gets the distance between two vectors */
-  vectorDistance(v0: number[], v1: number[]) {
-    return Math.sqrt((v0[0] - v1[0]) ** 2 + (v0[1] - v1[1]) ** 2);
+    const boidsInRange = this.getNearbyBoids(cohesionRange, fov);
+
+    if (boidsInRange.length < 1) {
+      return;
+    }
+
+    const boidPositions = boidsInRange.map((boid) => boid.pos);
+
+    const averageCenter = getVectorsAverage(boidPositions);
+
+    const currentRotation = signAngle(this.rotation);
+    const targetVec = Vector2D.subtract(averageCenter, this.pos);
+    const targetRotation = rad2Deg(Math.atan2(targetVec.y, targetVec.x));
+    const angleDiff = signAngle((targetRotation + 360) - (currentRotation + 360));
+    const rotationDir = clamp(angleDiff, -1, 1);
+    const clampedTargetRot = Math.min(maxRotationSpeed, Math.abs(angleDiff));
+
+    this.rotation += rotationDir * rotationStrength * clampedTargetRot;
   };
 
-  /** steer to avoid going outside the canvas */
+  /** Steer to avoid going outside the canvas. */
   updateCanvasBoundsAvoidance() {
     const checkAngles = [-90, -60, -30, 0, 30, 60, 90];
     const traceDistance = 300;
     const maxRotationSpeed = 5;
 
     for (const angle of checkAngles) {
-      const direction = this.getDirectionVector(angle);
+      const direction = this.getForwardVector(angle);
 
-      const predictedX = this.clamp(
-        this.x + (direction[0] * traceDistance),
+      const predictedX = clamp(
+        this.pos.x + (direction.x * traceDistance),
         0,
         this.engine.width
       );
-      const predictedY = this.clamp(
-        this.y + (direction[1] * traceDistance),
+      const predictedY = clamp(
+        this.pos.y + (direction.y * traceDistance),
         0,
         this.engine.height
       );
+      const predictedVector = new Vector2D(predictedX, predictedY);
 
-      const distance = this.vectorDistance([this.x, this.y], [predictedX, predictedY]);
-      const rotationDir = this.clamp(-angle + 0.01, -1, 1);
+      const distance = Vector2D.distance(this.pos, predictedVector);
+      const rotationDir = clamp(-angle + 0.01, -1, 1);
       const rotationStrenth = (1 - (1 / (traceDistance / Math.max(distance, 1))));
 
       this.rotation += maxRotationSpeed * rotationDir * rotationStrenth;
