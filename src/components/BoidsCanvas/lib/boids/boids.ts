@@ -225,9 +225,9 @@ export class Boid {
     // TODO: implement seperation, alignment, & cohesion
     this.updateFishTailEffect();
     this.updateSeparation();
-    this.updateAlignment();
+    // this.updateAlignment();
     // this.updateCohesion();
-    this.updateCanvasBoundsAvoidance();
+    // this.updateCanvasBoundsAvoidance();
 
     this.draw();
     this.ctx.resetTransform();
@@ -256,12 +256,8 @@ export class Boid {
 
   /** steer to avoid crowding local flockmates */
   updateSeparation() {
-    // TODO: the seperation sort of works but in an unexpected way...
-    // I think what's going on is we're just rotating in the same direction
-    // (clockwise) regardless of the direction that would be easier for the
-    // boid to take
     const separationRange = 150;
-    const maxRotationSpeed = 6;
+    const maxRotationSpeed = 5;
 
     const boidsInRange = this.getNearbyBoids(separationRange);
 
@@ -269,13 +265,18 @@ export class Boid {
       const distance = Vector2D.distance(this.pos, boid.pos);
 
       // get direction angle of other boid
-      // const signedAngle = signAngle(this.rotation);
       const targetVec = Vector2D.subtract(boid.pos, this.pos);
-      const angleDiff = rad2Deg(Math.atan2(targetVec.y, targetVec.x));
-      const rotationDir = clamp(-angleDiff, -1, 1);
-      const lerpedRotation = Math.min(maxRotationSpeed, Math.abs(angleDiff));
+      const avoidAngle = rad2Deg(Math.atan2(targetVec.y, targetVec.x));
+      const currentRotation = signAngle(this.rotation);
+      const angleDiff = signAngle((currentRotation + 360) - (avoidAngle + 360));
+      // push angleDiff away from 0
+      const rotationDir = clamp(angleDiff, -1, 1);
+      const targetRotation = Math.min(maxRotationSpeed, Math.abs(angleDiff));
+      const rotationStrenth = 1 - (distance / separationRange);
 
-      this.rotation += rotationDir * lerpedRotation;
+      // console.log(`${this.color} ${angleDiff} ${rotationDir} ${targetRotation}`);
+
+      this.rotation += rotationStrenth * rotationDir * targetRotation;
     }
   };
 
