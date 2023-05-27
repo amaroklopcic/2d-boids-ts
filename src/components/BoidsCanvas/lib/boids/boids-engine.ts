@@ -1,6 +1,6 @@
-import { CanvasEngine } from "../engine/engine";
-import { Vector2D, rad2Deg, signAngle } from "../math-helpers";
-import { Boid } from "./boids";
+import { CanvasEngine } from '../engine/engine';
+import { Vector2D, rad2Deg, signAngle } from '../math-helpers';
+import { Boid } from './boids';
 
 export class BoidsEngine {
   ctx: CanvasRenderingContext2D;
@@ -13,8 +13,8 @@ export class BoidsEngine {
     ctx: CanvasRenderingContext2D,
     width: number,
     height: number,
-    fpsLimit: number = 60,
-    fpsDisplay: boolean = false,
+    fpsLimit = 60,
+    fpsDisplay = false,
   ) {
     this.ctx = ctx;
     this.width = width;
@@ -32,30 +32,26 @@ export class BoidsEngine {
       this.update();
     });
     await this.engine.start();
-  };
+  }
 
   /** stops the `CanvasEngine` */
   async stop() {
     await this.engine.stop();
     this.boids = [];
-  };
+  }
 
   /** instantiates a new boid object */
-  createBoid(x: number, y: number, color: string = "#0077B6") {
-    console.debug("creating boid...");
+  createBoid(x: number, y: number, color = '#0077B6') {
+    console.debug('creating boid...');
     const boid = new Boid(this, x, y, color);
     this.boids.push(boid);
     return boid;
-  };
+  }
 
   /** instantiates and creates x number of boids and places them randomly */
   bulkCreateBoids() {
     const boidCount = 60;
-    const differentColors = [
-      "#023E8A",
-      "#0077B6",
-      "#0096C7"
-    ];
+    const differentColors = ['#023E8A', '#0077B6', '#0096C7'];
 
     // two boids going towards each other
     // const boid = this.createBoid(400, 100, "blue");
@@ -69,23 +65,21 @@ export class BoidsEngine {
     // nice blue color palette:
     // https://coolors.co/palette/03045e-023e8a-0077b6-0096c7-00b4d8-48cae4-90e0ef-ade8f4-caf0f8
     for (let i = 1; i < boidCount; i++) {
-      let x, y;
-
-      x = this.width * Math.random();
-      y = this.height * Math.random();
+      const x = this.width * Math.random();
+      const y = this.height * Math.random();
 
       const boid = this.createBoid(x, y, differentColors[i % 3]);
 
       if (i === 1) {
-        boid.color = "red";
+        boid.color = 'red';
         boid.debug = true;
       }
 
       const targetVec = Vector2D.subtract(center, boid.pos);
       const targetRotation = rad2Deg(Math.atan2(targetVec.y, targetVec.x));
-      boid.rotation = signAngle(targetRotation + (180 * Math.random()) - 90);
+      boid.rotation = signAngle(targetRotation + 180 * Math.random() - 90);
     }
-  };
+  }
 
   /** run all the boids updates */
   update() {
@@ -95,7 +89,7 @@ export class BoidsEngine {
     // );
 
     const [width, height] = [this.width, this.height];
-    for (let i=0; i < this.boids.length; i++) {
+    for (let i = 0; i < this.boids.length; i++) {
       const boid = this.boids[i];
 
       // teleport boid to other side of canvas if out of bounds
@@ -106,5 +100,5 @@ export class BoidsEngine {
 
       boid.update();
     }
-  };
+  }
 }
