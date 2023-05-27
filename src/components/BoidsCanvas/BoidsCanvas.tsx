@@ -1,5 +1,5 @@
-import { useEffect, useRef } from "react";
-import { BoidsEngine } from "./lib/boids/boids-engine";
+import { useEffect, useRef } from 'react';
+import { BoidsEngine } from './lib/boids/boids-engine';
 
 interface IBoidsCanvasProps {
   width?: number;
@@ -20,16 +20,10 @@ function BoidsCanvas(props: IBoidsCanvasProps) {
   useEffect(() => {
     const canvas = canvasRef.current;
     if (canvas == null) return;
-    const ctx = canvas.getContext("2d");
+    const ctx = canvas.getContext('2d');
     if (ctx == null) return;
 
-    const engine = new BoidsEngine(
-      ctx,
-      canvasWidth,
-      canvasHeight,
-      fpsLimit,
-      fpsDisplay
-    );
+    const engine = new BoidsEngine(ctx, canvasWidth, canvasHeight, fpsLimit, fpsDisplay);
 
     engineRef.current = engine;
   }, [canvasWidth, canvasHeight, fpsLimit, fpsDisplay]);
@@ -44,22 +38,21 @@ function BoidsCanvas(props: IBoidsCanvasProps) {
 
   return (
     <div>
-      <div style={{ display: "flex", justifyContent: "center" }}>
+      <div style={{ display: 'flex', justifyContent: 'center' }}>
         <button onClick={startEngine}>Start</button>
         <button onClick={stopEngine}>Stop</button>
       </div>
       <canvas
-        id="boids-canvas"
+        id='boids-canvas'
         ref={canvasRef}
         width={canvasWidth}
         height={canvasHeight}
         style={{
-          border: "1px solid black"
+          border: '1px solid black',
         }}
-      >
-      </canvas>
+      ></canvas>
     </div>
-  )
+  );
 }
 
 export { BoidsCanvas };
