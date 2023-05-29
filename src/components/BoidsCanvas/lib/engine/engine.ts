@@ -138,7 +138,7 @@ export class CanvasEngine {
 
       const fps = Math.round(1000 / deltaTimeAvg);
       this.ctx.font = '18px serif';
-      this.ctx.fillStyle = 'red';
+      this.ctx.fillStyle = '#526980';
       this.ctx.fillText(`FPS: ${fps}`, 10, 24);
     }
   }
