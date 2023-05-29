@@ -16,13 +16,12 @@ Boids, as well as to brush up on some of my programming & trigonometry skills :)
 I got the idea & inspiration from [Sebatian Lague.](https://www.youtube.com/watch?v=bqtqltqcQhw)
 
 ## Features
+
 - implemented Boid separation, alignment, and cohesion
 - canvas bounds avoidance
 - fish tail effect for a more alive feel
 - a basic event loop to handle redrawing frames using the [JavaScript Canvas API](https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API)
 - simulation start & stop buttons (stopping and restarting effectively resets the simulation)
-
----
 
 ## Development Quickstart
 
