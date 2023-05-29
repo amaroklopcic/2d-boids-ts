@@ -71,7 +71,7 @@ export class BoidsEngine {
       const boid = this.createBoid(x, y, differentColors[i % 3]);
 
       if (i === 1) {
-        boid.color = 'red';
+        boid.color = '#EC0B43';
         boid.debug = true;
       }
 

@@ -90,8 +90,8 @@ export class Boid {
     const forward = this.getForwardVector();
     const magnitude = 50;
 
-    ctx.fillStyle = 'green';
-    ctx.strokeStyle = 'green';
+    ctx.fillStyle = '#79DC2E';
+    ctx.strokeStyle = '#79DC2E';
     ctx.lineWidth = 1;
 
     // we want to test `this.getForwardVector()`, so we're resetting the
@@ -119,7 +119,7 @@ export class Boid {
     const fov = 225;
     const boids = this.getNearbyBoids(maxRange, fov);
 
-    ctx.strokeStyle = 'red';
+    ctx.strokeStyle = '#E90C43';
     ctx.lineWidth = 1;
 
     ctx.resetTransform();
