@@ -52,7 +52,7 @@ function BoidsCanvas(props: IBoidsCanvasProps) {
         width={dimensions.width - 2}
         height={dimensions.height - 2}
         style={{
-          border: '1px solid black',
+          border: '2px solid #526980',
         }}
       ></canvas>
       <div className='canvas-overlay'>
