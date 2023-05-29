@@ -25,6 +25,9 @@ export class BoidsEngine {
 
   /** starts the `CanvasEngine` */
   async start() {
+    if (this.engine.state === 'RUNNING' || this.engine.stateDesired === 'RUNNING') {
+      return;
+    }
     this.engine.addStartHook(() => {
       this.bulkCreateBoids();
     });
@@ -36,6 +39,9 @@ export class BoidsEngine {
 
   /** stops the `CanvasEngine` */
   async stop() {
+    if (this.engine.state === 'STOPPED' || this.engine.stateDesired === 'STOPPED') {
+      return;
+    }
     await this.engine.stop();
     this.boids = [];
   }
