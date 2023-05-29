@@ -187,18 +187,16 @@ export class Boid {
           continue;
         }
 
-        // TODO: will need to adjust this, as some boids are only being
-        // returned if they are on one side or the other, causing a flickering
-        // effect
+        const currentRotation = signAngle(this.rotation);
+        const rotationDiff = -currentRotation;
         const targetVec = Vector2D.subtract(boid.pos, this.pos);
         const targetAngle = rad2Deg(Math.atan2(targetVec.y, targetVec.x));
         const fovHalf = fov / 2;
-        const signedAngle = signAngle(this.rotation);
-        const minAngle = ((signedAngle + 360) % 360) - fovHalf;
-        const maxAngle = ((signedAngle + 360) % 360) + fovHalf;
-        const positiveTargetAng = (targetAngle + 360) % 360;
+        const minAngle = -fovHalf;
+        const maxAngle = fovHalf;
+        const localizedTargetAngle = signAngle(targetAngle + rotationDiff);
 
-        if (positiveTargetAng <= maxAngle && positiveTargetAng >= minAngle) {
+        if (localizedTargetAngle <= maxAngle && localizedTargetAngle >= minAngle) {
           returnVal.push(boid);
         }
       }
