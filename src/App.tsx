@@ -4,7 +4,14 @@ import { BoidsCanvas } from './components/BoidsCanvas/BoidsCanvas';
 function App() {
   return (
     <div className='App'>
-      <BoidsCanvas width={1000} height={800} fpsLimit={60} fpsDisplay />
+      <div>
+        <p>
+          Boids are cool.
+        </p>
+        <div style={{ width: '80%', height: '600px', marginLeft: 'auto', marginRight: 'auto' }}>
+          <BoidsCanvas fpsLimit={60} fpsDisplay />
+        </div>
+      </div>
     </div>
   );
 }
