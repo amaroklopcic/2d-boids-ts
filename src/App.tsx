@@ -7,7 +7,7 @@ function App() {
       <div>
         <h1>2D Boids Experiment</h1>
 
-        <p style={{ width: '500px', marginLeft: 'auto', marginRight: 'auto' }}>
+        <p className='text-content'>
           <i>
             {`"Boids is an artificial life program, developed by Craig Reynolds in 1986, which
             simulates the flocking behaviour of birds. His paper on this topic was published in 1987
@@ -22,16 +22,24 @@ function App() {
 
         <br />
 
-        <div style={{ width: '80%', height: '600px', marginLeft: 'auto', marginRight: 'auto' }}>
+        <div
+          style={{
+            width: '80%',
+            maxWidth: 1000,
+            height: '600px',
+            marginLeft: 'auto',
+            marginRight: 'auto',
+          }}
+        >
           <BoidsCanvas fpsLimit={60} fpsDisplay />
         </div>
 
         <br />
 
-        <p style={{ width: '500px', marginLeft: 'auto', marginRight: 'auto' }}>
+        <p className='text-content'>
           This was an experiment I ran to have some fun playing around with the mathematical concept
-          of Boids, as well as to brush up on some of my programming & trigonometry skills :)
-          If you like this, feel free to check out some of my other work at my website:
+          of Boids, as well as to brush up on some of my programming & trigonometry skills :) If you
+          like this, feel free to check out some of my other work at my website:
           <br />
           <a href='https://www.amaroklopcic.com'>www.amaroklopcic.com</a>
         </p>
