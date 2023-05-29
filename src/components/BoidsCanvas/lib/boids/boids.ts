@@ -216,7 +216,6 @@ export class Boid {
 
     this.setPos(this.pos.x + forward.x * this.velocity, this.pos.y + forward.y * this.velocity);
 
-    // TODO: implement seperation, alignment, & cohesion
     this.updateFishTailEffect();
     this.updateSeparation();
     this.updateAlignment();
